@@ -28,52 +28,28 @@
 
 import SwiftUI
 
-public struct RemoteImageView<Content: View>: View {
-    @ObservedObject var imageFetcher: RemoteImageFetcher
-    var content: (_ image: Image) -> Content
-    let placeHolder: Image
+public class RemoteImageFetcher: ObservableObject {
+    @Published var imageData = Data()
+    let url: URL
     
-    @State var previousURL: URL? = nil
-    @State var imageData: Data = Data()
-    
-    public init(placeHolder: Image, imageFetcher: RemoteImageFetcher, content: @escaping (_ image: Image) -> Content) {
-        self.placeHolder = placeHolder
-        self.imageFetcher = imageFetcher
-        self.content = content
-    }
-
-    public var body: some View {
-        DispatchQueue.main.async {
-            if (self.previousURL != self.imageFetcher.getUrl()) {
-                self.previousURL = self.imageFetcher.getUrl()
-            }
-            
-            if(!self.imageFetcher.imageData.isEmpty) {
-                self.imageData = self.imageFetcher.imageData
-            }
-        }
-        
-        let uiImage = imageData.isEmpty ? nil : UIImage(data: imageData)
-        let image = uiImage != nil ? Image(uiImage: uiImage!) : nil;
-        
-        return ZStack() {
-            if image != nil {
-                content(image!)
-            } else {
-                content(placeHolder)
-            }
-        }
-        .onAppear(perform: loadImage)
+    public init(url: URL) {
+        self.url = url
     }
     
-    private func loadImage() {
-        imageFetcher.fetch()
+    public func fetch() {
+        URLSession.shared.dataTask(with: url) { (data, _, _) in
+            guard let data = data else { return }
+            DispatchQueue.main.async {
+                self.imageData = data
+            }
+        }.resume()
     }
     
+    public func getImageData() -> Data {
+        return imageData
+    }
+    
+    public func getUrl() -> URL {
+        return url
+    }
 }
-
-//struct RemoteImageView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        RemoteImageView()
-//    }
-//}

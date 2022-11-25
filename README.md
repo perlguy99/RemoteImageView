@@ -1,3 +1,3 @@
 # RemoteImageView
 
-A description of this package.
+Remote Image Fetcher and View
